@@ -1,4 +1,5 @@
 const std = @import("std");
+const Client = @import("client.zig").Client;
 
 // msg parameter
 fn usage(msg: []const u8) !void {
@@ -35,15 +36,14 @@ pub fn main() !void {
             return;
         }
 
-        const input_file = args[2];
-        const remote_uri = args[3]; // host:port@/media/test
+        const client = Client.create(args[2], args[3]);
 
         // if no @, then fail
 
         // if no /, then fail
         // if / is the last character, then fail
 
-        const at_pos = std.mem.indexOf(u8, remote_uri, "@");
+        const at_pos = std.mem.indexOf(u8, client.remote_uri, "@");
 
         if (at_pos == null) {
             try usage("Expected @ in remote URI");
@@ -60,8 +60,8 @@ pub fn main() !void {
         //    return;
         //}
 
-        std.log.info("Input file: {s}", .{input_file});
-        std.log.info("Remote URI: {s}", .{remote_uri});
+        std.log.info("Input file: {s}", .{client.input_file_path});
+        std.log.info("Remote URI: {s}", .{client.remote_uri});
 
         // const address = std.net.Address.initIp4([4]u8{ 127, 0, 0, 1 }, 8080);
 
@@ -72,8 +72,5 @@ pub fn main() !void {
 }
 
 test "simple test" {
-    //var list = std.ArrayList(i32).init(std.testing.allocator);
-    //defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    //try list.append(42);
-    //try std.testing.expectEqual(@as(i32, 42), list.pop());
+    try std.testing.expectEqual(@as(i32, 42), @as(i32, 42));
 }
