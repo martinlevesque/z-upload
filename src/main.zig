@@ -3,7 +3,7 @@ const Client = @import("client.zig").Client;
 
 // msg parameter
 fn usage(msg: []const u8) !void {
-    std.log.warn("Usage: z-upload -server|-client <input-file> <host:port@/media/test>", .{});
+    std.log.warn("Usage: z-upload -server|-client <input-file> </file/path@host:port>", .{});
 
     if (msg.len != 0) {
         std.log.warn("{s}", .{msg});
