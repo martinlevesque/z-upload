@@ -36,7 +36,7 @@ pub fn main() !void {
             return;
         }
 
-        const client = Client.create(args[2], args[3]);
+        const client = try Client.create(args[2], args[3]);
 
         // if no @, then fail
 
