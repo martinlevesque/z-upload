@@ -6,17 +6,17 @@ pub const Client = struct {
     host: ?[]const u8,
     port: ?u16,
 
-    pub fn create(input_file_path: []const u8, remote_uri: []const u8) !Client {
-        const posAt = std.mem.indexOf(u8, remote_uri, "@");
-        const posPortDelimiter = std.mem.indexOf(u8, remote_uri, ":");
+    pub fn init(input_file_path: []const u8, remote_uri: []const u8) !Client {
+        const pos_at = std.mem.indexOf(u8, remote_uri, "@");
+        const pos_port_delimiter = std.mem.indexOf(u8, remote_uri, ":");
 
         var host: ?[]const u8 = null;
         var port: ?u16 = null;
 
-        if (posAt != null and posPortDelimiter != null) {
-            host = remote_uri[posAt.? + 1 .. posPortDelimiter.?];
+        if (pos_at != null and pos_port_delimiter != null) {
+            host = remote_uri[pos_at.? + 1 .. pos_port_delimiter.?];
 
-            port = try std.fmt.parseInt(u16, remote_uri[posPortDelimiter.? + 1 ..], 10);
+            port = try std.fmt.parseInt(u16, remote_uri[pos_port_delimiter.? + 1 ..], 10);
         } else {
             return error.ClientInvalidRemoteUri;
         }
@@ -25,10 +25,10 @@ pub const Client = struct {
     }
 };
 
-test "create" {
+test "init" {
     const remote_uri = "/media/remote.txt@localhost:3000";
     const local_file_path = "/media/local.txt";
-    const client = try Client.create(local_file_path, remote_uri);
+    const client = try Client.init(local_file_path, remote_uri);
 
     try std.testing.expect(std.mem.eql(u8, client.input_file_path, local_file_path));
     try std.testing.expect(std.mem.eql(u8, client.remote_uri, remote_uri));

@@ -12,3 +12,6 @@ test-all: lint test
 
 client-sample: build
 	./zig-out/bin/z-upload -client 
+
+server-sample: build
+	./zig-out/bin/z-upload -server
