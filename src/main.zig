@@ -29,7 +29,7 @@ pub fn main() !void {
 
     if (std.mem.eql(u8, mode, "-server")) {
         std.log.info("Server mode", .{});
-        const server = try Server.init("127.0.0.1:8888");
+        var server = try Server.init("127.0.0.1:8888");
         defer server.deinit();
 
         std.log.info("Listening on {s}:{any}", .{ server.host, server.port });
