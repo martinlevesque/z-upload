@@ -1,4 +1,5 @@
 const std = @import("std");
+const net_util = @import("net_util.zig");
 
 pub const Server = struct {
     stream_server: std.net.StreamServer,
@@ -20,15 +21,7 @@ pub const Server = struct {
             return error.ClientInvalidListenToUri;
         }
 
-        var ip_array: [4]u8 = undefined;
-        var it = std.mem.split(u8, host, ".");
-        var i: usize = 0;
-
-        while (it.next()) |octet| {
-            ip_array[i] = try std.fmt.parseUnsigned(u8, octet, 10);
-            i += 1;
-        }
-        const address = std.net.Address.initIp4(ip_array, port);
+        const address = std.net.Address.initIp4(net_util.str_ip_to_array(host), port);
 
         var server = std.net.StreamServer.init(.{ .reuse_address = true });
         try server.listen(address);

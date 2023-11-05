@@ -41,35 +41,10 @@ pub fn main() !void {
             return;
         }
 
-        const client = try Client.init(args[2], args[3]);
-
-        // if no @, then fail
-
-        // if no /, then fail
-        // if / is the last character, then fail
-
-        const at_pos = std.mem.indexOf(u8, client.remote_uri, "@");
-
-        if (at_pos == null) {
-            try usage("Expected @ in remote URI");
-            return;
-        }
-
-        //const host_part = remote_uri[0..pos_at];
-
-        // print at_post
-
-        //if (at_pos == null) {
-        //    std.log.warn("Expected @ in remote URI", .{});
-        //    try usage();
-        //    return;
-        //}
+        const client = try Client.init(gpa, args[2], args[3]);
 
         std.log.info("Input file: {s}", .{client.input_file_path});
         std.log.info("Remote URI: {s}", .{client.remote_uri});
-
-        // const address = std.net.Address.initIp4([4]u8{ 127, 0, 0, 1 }, 8080);
-
     } else {
         std.log.warn("Unknown mode: {s}", .{mode});
         return;
