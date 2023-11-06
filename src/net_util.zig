@@ -32,8 +32,8 @@ pub const HostPort = struct {
         return HostPort{ .host = cloned_host, .port = port, .allocator = allocator };
     }
 
-    pub fn parse_host_port(allocator: Allocator, host_port: []const u8) !HostPort {
-        var it = std.mem.split(u8, host_port, ":");
+    pub fn parse_host_port(allocator: Allocator, host_port_str: []const u8) !HostPort {
+        var it = std.mem.split(u8, host_port_str, ":");
         var host: []const u8 = undefined;
 
         if (it.next()) |given_host| {

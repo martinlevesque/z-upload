@@ -35,6 +35,6 @@ test "init" {
     defer client.deinit();
 
     try std.testing.expect(std.mem.eql(u8, client.input_file_path, local_file_path));
-    //try std.testing.expect(std.mem.eql(u8, client.remote_uri, remote_uri));
-    //try std.testing.expect(std.mem.eql(u8, client.host_port.host, "localhost"));
+    try std.testing.expect(std.mem.eql(u8, client.remote_uri, remote_uri));
+    try std.testing.expect(std.mem.eql(u8, client.host_port.host, "localhost"));
 }

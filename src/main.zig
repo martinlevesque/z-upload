@@ -1,6 +1,6 @@
 const std = @import("std");
 const Client = @import("client.zig").Client;
-//const Server = @import("server.zig").Server;
+const Server = @import("server.zig").Server;
 
 // msg parameter
 fn usage(msg: []const u8) !void {
@@ -29,8 +29,8 @@ pub fn main() !void {
 
     if (std.mem.eql(u8, mode, "-server")) {
         std.log.info("Server mode", .{});
-        //var server = try Server.init("127.0.0.1:8888");
-        //defer server.deinit();
+        var server = try Server.init(allocator, "127.0.0.1:8888");
+        defer server.deinit();
 
         //std.log.info("Listening on {s}:{any}", .{ server.host, server.port });
     } else if (std.mem.eql(u8, mode, "-client")) {
