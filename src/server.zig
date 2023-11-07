@@ -11,7 +11,7 @@ pub const Server = struct {
     pub fn init(allocator: Allocator, listen_to: []const u8) !Server {
         // listen_to: host:port
 
-        const host_port = try HostPort.parse_host_port(allocator, listen_to);
+        var host_port = try HostPort.parse_host_port(allocator, listen_to);
         const ip_array = net_util.str_ip_to_array(host_port.host);
 
         if (ip_array == null) {
@@ -23,7 +23,7 @@ pub const Server = struct {
         var server = std.net.StreamServer.init(.{ .reuse_address = true });
         try server.listen(address);
 
-        std.log.info("hello server", .{});
+        std.log.info("init listening...", .{});
 
         return Server{ .allocator = allocator, .host_port = host_port, .stream_server = server };
     }
@@ -31,6 +31,20 @@ pub const Server = struct {
     pub fn deinit(self: *Server) void {
         self.stream_server.deinit();
         self.host_port.deinit();
+    }
+
+    pub fn handle(self: *Server) !void {
+        const conn = try self.stream_server.accept();
+        defer conn.stream.close();
+
+        var buf: [1024]u8 = undefined;
+        const msg_size = try conn.stream.read(buf[0..]);
+
+        std.log.info("received: {s}", .{buf[0..msg_size]});
+
+        // try std.testing.expectEqualStrings(client_msg, buf[0..msg_size]);
+
+        // _ = try conn.stream.write(server_msg);
     }
 };
 

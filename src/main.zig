@@ -29,8 +29,19 @@ pub fn main() !void {
 
     if (std.mem.eql(u8, mode, "-server")) {
         std.log.info("Server mode", .{});
-        var server = try Server.init(allocator, "127.0.0.1:8888");
+
+        if (args.len < 3) {
+            try usage("Expected additional arguments");
+            return;
+        }
+
+        var server = try Server.init(allocator, args[2]);
+        std.log.info("server initiated...", .{});
         defer server.deinit();
+
+        std.log.info("to handle...", .{});
+        try server.handle();
+        std.log.info("handled", .{});
 
         //std.log.info("Listening on {s}:{any}", .{ server.host, server.port });
     } else if (std.mem.eql(u8, mode, "-client")) {
@@ -43,6 +54,12 @@ pub fn main() !void {
 
         var client = try Client.init(allocator, args[2], args[3]);
         defer client.deinit();
+
+        std.log.info("about to connect...", .{});
+        try client.connect();
+        std.log.info("connected...", .{});
+
+        try client.sendMsgToServer();
 
         std.log.info("Input file: {s}", .{client.input_file_path});
         std.log.info("Remote URI: {s}", .{client.remote_uri});
