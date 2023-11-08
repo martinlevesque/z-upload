@@ -4,7 +4,7 @@ const Server = @import("server.zig").Server;
 
 // msg parameter
 fn usage(msg: []const u8) !void {
-    std.log.warn("Usage: z-upload -server|-client <input-file> </file/path@host:port>", .{});
+    std.log.warn("Usage: z-upload -server host:port|-client <input-file> </file/path@host:port>", .{});
 
     if (msg.len != 0) {
         std.log.warn("{s}", .{msg});
@@ -40,7 +40,7 @@ pub fn main() !void {
         defer server.deinit();
 
         std.log.info("to handle...", .{});
-        try server.handle();
+        try server.handle_client();
         std.log.info("handled", .{});
 
         //std.log.info("Listening on {s}:{any}", .{ server.host, server.port });
@@ -59,10 +59,7 @@ pub fn main() !void {
         try client.connect();
         std.log.info("connected...", .{});
 
-        try client.sendMsgToServer();
-
-        std.log.info("Input file: {s}", .{client.input_file_path});
-        std.log.info("Remote URI: {s}", .{client.remote_uri});
+        try client.process();
     } else {
         std.log.warn("Unknown mode: {s}", .{mode});
         return;

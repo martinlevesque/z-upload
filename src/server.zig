@@ -33,18 +33,20 @@ pub const Server = struct {
         self.host_port.deinit();
     }
 
-    pub fn handle(self: *Server) !void {
+    pub fn handle_client(self: *Server) !void {
         const conn = try self.stream_server.accept();
         defer conn.stream.close();
 
-        var buf: [1024]u8 = undefined;
-        const msg_size = try conn.stream.read(buf[0..]);
+        // where the file will be written
+        var filepath_to_write: [1024]u8 = undefined;
+        const filepath_to_write_size = try conn.stream.read(filepath_to_write[0..]);
 
-        std.log.info("received: {s}", .{buf[0..msg_size]});
+        // file status reporting
+        // todo should determine if the file already exist, if so, report remaining todo
+        // using head -c 1000 testfile.txt | cksum
+        _ = try conn.stream.write("ok");
 
-        // try std.testing.expectEqualStrings(client_msg, buf[0..msg_size]);
-
-        // _ = try conn.stream.write(server_msg);
+        std.log.info("received filepath: {s}", .{filepath_to_write[0..filepath_to_write_size]});
     }
 };
 

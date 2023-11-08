@@ -7,8 +7,9 @@ pub const Client = struct {
     input_file_path: []const u8,
     remote_uri: []const u8, // example: /media/file.txt@hostname:3456
     host_port: HostPort,
+    remote_file_path: []const u8,
     allocator: Allocator,
-    connection: ?std.net.Stream,
+    connection_stream: ?std.net.Stream,
 
     pub fn init(allocator: Allocator, input_file_path: []const u8, remote_uri: []const u8) !Client {
         const pos_at = std.mem.indexOf(u8, remote_uri, "@");
@@ -17,16 +18,29 @@ pub const Client = struct {
             return error.ClientMissingAtSign;
         }
 
+        // setup the remote_file_path part
+        const remote_file_path = try allocator.alloc(u8, pos_at.?);
+        std.mem.copy(u8, remote_file_path, remote_uri[0..pos_at.?]);
+
+        // host_port part
         var host_port = try HostPort.parse_host_port(allocator, remote_uri[pos_at.? + 1 ..]);
 
-        return Client{ .connection = null, .allocator = allocator, .input_file_path = input_file_path, .remote_uri = remote_uri, .host_port = host_port };
+        return Client{
+            .connection_stream = null,
+            .allocator = allocator,
+            .input_file_path = input_file_path,
+            .remote_uri = remote_uri,
+            .host_port = host_port,
+            .remote_file_path = remote_file_path,
+        };
     }
 
     pub fn deinit(self: *Client) void {
         self.host_port.deinit();
+        self.allocator.free(self.remote_file_path);
 
-        if (self.connection != null) {
-            defer self.connection.?.close();
+        if (self.connection_stream != null) {
+            defer self.connection_stream.?.close();
         }
     }
 
@@ -38,13 +52,20 @@ pub const Client = struct {
         }
 
         const conn_to_address = std.net.Address.initIp4(ip_array.?, self.host_port.port);
-        self.connection = try std.net.tcpConnectToAddress(conn_to_address);
-
-        std.log.info("addrr .. {any}", .{conn_to_address});
+        self.connection_stream = try std.net.tcpConnectToAddress(conn_to_address);
     }
 
-    pub fn sendMsgToServer(self: *Client) !void {
-        _ = try self.connection.?.write("hello world lol.");
+    pub fn process(self: *Client) !void {
+        // send our the remote file path
+        _ = try self.connection_stream.?.write(self.remote_file_path);
+
+        std.log.info("client has written", .{});
+        // read the status
+        var status: [1024]u8 = undefined;
+        const status_size = try self.connection_stream.?.read(status[0..]);
+        std.log.info("status .. {s}", .{status[0..status_size]});
+
+        std.log.info("client finished.", .{});
     }
 };
 
