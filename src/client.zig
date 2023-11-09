@@ -65,6 +65,25 @@ pub const Client = struct {
         const status_size = try self.connection_stream.?.read(status[0..]);
         std.log.info("status .. {s}", .{status[0..status_size]});
 
+        // file reading and sending
+        var local_file = try std.fs.cwd().openFile(self.input_file_path, .{});
+        defer local_file.close();
+
+        const read_buffer_size = 1024;
+        var buffer_read: [read_buffer_size]u8 = undefined;
+        try local_file.seekTo(0);
+        var read_bytes: ?usize = null;
+
+        // while read content
+        while (read_bytes == null or read_bytes.? != 0) {
+            read_bytes = try local_file.read(buffer_read[0..]);
+
+            if (read_bytes.? > 0) {
+                std.log.info("sending bytes .. {d}, content read {s}", .{ read_bytes.?, buffer_read[0..read_bytes.?] });
+                _ = try self.connection_stream.?.write(buffer_read[0..read_bytes.?]);
+            }
+        }
+
         std.log.info("client finished.", .{});
     }
 };

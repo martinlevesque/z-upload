@@ -46,7 +46,21 @@ pub const Server = struct {
         // using head -c 1000 testfile.txt | cksum
         _ = try conn.stream.write("ok");
 
+        // then read
         std.log.info("received filepath: {s}", .{filepath_to_write[0..filepath_to_write_size]});
+        var local_file = try std.fs.cwd().createFile(filepath_to_write[0..filepath_to_write_size], .{});
+        defer local_file.close();
+
+        var buffer: [1024]u8 = undefined;
+        var read_size: ?usize = null;
+
+        while (read_size == null or read_size.? != 0) {
+            read_size = try conn.stream.read(buffer[0..]);
+
+            if (read_size.? > 0) {
+                _ = try local_file.write(buffer[0..read_size.?]);
+            }
+        }
     }
 };
 
