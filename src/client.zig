@@ -79,7 +79,7 @@ pub const Client = struct {
             read_bytes = try local_file.read(buffer_read[0..]);
 
             if (read_bytes.? > 0) {
-                std.log.info("sending bytes .. {d}, content read {s}", .{ read_bytes.?, buffer_read[0..read_bytes.?] });
+                std.log.info("sending bytes .. {d}", .{read_bytes.?});
                 _ = try self.connection_stream.?.write(buffer_read[0..read_bytes.?]);
             }
         }
