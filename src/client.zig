@@ -69,7 +69,7 @@ pub const Client = struct {
         var local_file = try std.fs.cwd().openFile(self.input_file_path, .{});
         defer local_file.close();
 
-        const read_buffer_size = 65000;
+        const read_buffer_size = 200000;
         var buffer_read: [read_buffer_size]u8 = undefined;
         try local_file.seekTo(0);
         var read_bytes: ?usize = null;

@@ -51,7 +51,7 @@ pub const Server = struct {
         var local_file = try std.fs.cwd().createFile(filepath_to_write[0..filepath_to_write_size], .{});
         defer local_file.close();
 
-        var buffer: [65000]u8 = undefined;
+        var buffer: [200000]u8 = undefined;
         var read_size: ?usize = null;
 
         while (read_size == null or read_size.? != 0) {
