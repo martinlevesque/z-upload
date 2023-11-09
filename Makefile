@@ -14,4 +14,4 @@ client-sample: build
 	./zig-out/bin/z-upload -client ./tmp/testfile.txt /tmp/testfile-out.txt@127.0.0.1:8000
 
 server-sample: build
-	./zig-out/bin/z-upload -server 127.0.0.1:8000
+	./zig-out/bin/z-upload -server 0.0.0.0:8000
