@@ -8,6 +8,7 @@ make server-sample &
 sleep 3
 
 rm -f /tmp/testfile-out.txt
+mkdir -p ./tmp
 echo "testcontentfile!" > ./tmp/testfile.txt
 
 ./zig-out/bin/z-upload -client ./tmp/testfile.txt /tmp/testfile-out.txt@127.0.0.1:8000
