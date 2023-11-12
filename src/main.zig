@@ -1,4 +1,5 @@
 const std = @import("std");
+
 const Client = @import("client.zig").Client;
 const Server = @import("server.zig").Server;
 
@@ -9,6 +10,14 @@ fn usage(msg: []const u8) !void {
     if (msg.len != 0) {
         std.log.warn("{s}", .{msg});
     }
+}
+
+fn asyncing(id: u32) void {
+    // Sleep for 2 seconds
+    std.log.info("hello sleeping! {d}", .{id});
+    // sleep is in nanoseconds
+    std.time.sleep(2 * 1000 * 1000 * 1000);
+    std.log.info("done sleeping! {d}", .{id});
 }
 
 pub fn main() !void {
@@ -40,8 +49,18 @@ pub fn main() !void {
         defer server.deinit();
 
         std.log.info("to handle...", .{});
-        try server.handle_client();
-        std.log.info("handled", .{});
+        // while
+        while (true) {
+            std.log.info("begin main loop", .{});
+            var cur_thread = try server.handle_client();
+            std.log.info("handled client", .{});
+            std.log.info("thread created {any}", .{cur_thread});
+            std.log.info("will wait 2 seconds...", .{});
+            std.time.sleep(2 * 1000 * 1000 * 1000);
+            // break;
+        }
+
+        std.log.info("terminating server", .{});
 
         //std.log.info("Listening on {s}:{any}", .{ server.host, server.port });
     } else if (std.mem.eql(u8, mode, "-client")) {

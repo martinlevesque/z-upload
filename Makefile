@@ -5,10 +5,16 @@ build:
 lint:
 	zig fmt --check src/*.zig
 
-test:
+lint-fix:
+	zig fmt src/*.zig
+
+unit-test:
 	zig test src/tests.zig
 
-test-all: lint test
+end-to-end-test:
+	bash tests/end_to_end.sh
+
+test-all: lint unit-test end-to-end-test
 
 client-sample: build
 	./zig-out/bin/z-upload -client ./tmp/testfile.txt /tmp/testfile-out.txt@127.0.0.1:8000

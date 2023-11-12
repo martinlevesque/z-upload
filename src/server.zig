@@ -33,34 +33,44 @@ pub const Server = struct {
         self.host_port.deinit();
     }
 
-    pub fn handle_client(self: *Server) !void {
-        const conn = try self.stream_server.accept();
-        defer conn.stream.close();
-
-        // where the file will be written
-        var filepath_to_write: [1024]u8 = undefined;
-        const filepath_to_write_size = try conn.stream.read(filepath_to_write[0..]);
-
-        // file status reporting
-        // todo should determine if the file already exist, if so, report remaining todo
-        // using head -c 1000 testfile.txt | cksum
-        _ = try conn.stream.write("ok");
-
-        // then read
-        std.log.info("received filepath: {s}", .{filepath_to_write[0..filepath_to_write_size]});
-        var local_file = try std.fs.cwd().createFile(filepath_to_write[0..filepath_to_write_size], .{});
+    pub fn receive_file(_: *Server, conn_stream: std.net.Stream, server_file_path: []const u8) !void {
+        var local_file = try std.fs.cwd().createFile(server_file_path, .{});
         defer local_file.close();
 
         var buffer: [200000]u8 = undefined;
         var read_size: ?usize = null;
 
         while (read_size == null or read_size.? != 0) {
-            read_size = try conn.stream.read(buffer[0..]);
+            read_size = try conn_stream.read(buffer[0..]);
 
             if (read_size.? > 0) {
                 _ = try local_file.write(buffer[0..read_size.?]);
             }
         }
+    }
+
+    pub fn process_client(self: *Server, conn_stream: std.net.Stream) !void {
+        // where the file will be written
+        var filepath_to_write: [1024]u8 = undefined;
+        const filepath_to_write_size = try conn_stream.read(filepath_to_write[0..]);
+        std.log.info("received filepath: {s}", .{filepath_to_write[0..filepath_to_write_size]});
+
+        // file status reporting
+        // todo should determine if the file already exist, if so, report remaining todo
+        // using head -c 1000 testfile.txt | cksum
+        _ = try conn_stream.write("ok");
+
+        // then read-write
+        try self.receive_file(conn_stream, filepath_to_write[0..filepath_to_write_size]);
+    }
+
+    pub fn handle_client(self: *Server) !std.Thread {
+        const conn = try self.stream_server.accept();
+        //defer conn.stream.close(); -> TODO
+
+        var thread = try std.Thread.spawn(.{}, Server.process_client, .{ self, conn.stream });
+
+        return thread;
     }
 };
 

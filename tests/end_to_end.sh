@@ -21,3 +21,7 @@ if [ "$expected_checksum" != "$given_checksum" ]; then
     echo "Checksums do not match!"
     exit 1
 fi
+
+killall z-upload
+
+echo "End to end tests successful"
