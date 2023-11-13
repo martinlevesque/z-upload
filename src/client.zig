@@ -1,5 +1,5 @@
 const std = @import("std");
-const net_util = @import("net_util.zig");
+const net_util = @import("lib/net.zig");
 const HostPort = net_util.HostPort;
 const Allocator = std.mem.Allocator;
 

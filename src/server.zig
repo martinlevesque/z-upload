@@ -1,5 +1,5 @@
 const std = @import("std");
-const net_util = @import("net_util.zig");
+const net_util = @import("lib/net.zig");
 const HostPort = net_util.HostPort;
 const Allocator = std.mem.Allocator;
 
@@ -53,11 +53,17 @@ pub const Server = struct {
         // where the file will be written
         var filepath_to_write: [1024]u8 = undefined;
         const filepath_to_write_size = try conn_stream.read(filepath_to_write[0..]);
-        std.log.info("received filepath: {s}", .{filepath_to_write[0..filepath_to_write_size]});
+        const server_filepath = filepath_to_write[0..filepath_to_write_size];
+
+        std.log.info("received filepath: {s}", .{server_filepath});
 
         // file status reporting
         // todo should determine if the file already exist, if so, report remaining todo
         // using head -c 1000 testfile.txt | cksum
+
+        //var stat = try std.fs.cwd().statFile(server_filepath);
+        //std.log.info("stat remote file = {any}", .{stat});
+
         _ = try conn_stream.write("ok");
 
         // then read-write
@@ -66,7 +72,7 @@ pub const Server = struct {
 
     pub fn handle_client(self: *Server) !std.Thread {
         const conn = try self.stream_server.accept();
-        //defer conn.stream.close(); -> TODO
+        // defer conn.stream.close(); -> TODO
 
         var thread = try std.Thread.spawn(.{}, Server.process_client, .{ self, conn.stream });
 

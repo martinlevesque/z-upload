@@ -45,24 +45,16 @@ pub fn main() !void {
         }
 
         var server = try Server.init(allocator, args[2]);
-        std.log.info("server initiated...", .{});
+        std.log.info("Server initiated...", .{});
         defer server.deinit();
 
-        std.log.info("to handle...", .{});
         // while
         while (true) {
-            std.log.info("begin main loop", .{});
             var cur_thread = try server.handle_client();
-            std.log.info("handled client", .{});
-            std.log.info("thread created {any}", .{cur_thread});
-            std.log.info("will wait 2 seconds...", .{});
-            std.time.sleep(2 * 1000 * 1000 * 1000);
+
             // break;
+            cur_thread.detach();
         }
-
-        std.log.info("terminating server", .{});
-
-        //std.log.info("Listening on {s}:{any}", .{ server.host, server.port });
     } else if (std.mem.eql(u8, mode, "-client")) {
         std.log.info("Client mode", .{});
 
