@@ -12,14 +12,6 @@ fn usage(msg: []const u8) !void {
     }
 }
 
-fn asyncing(id: u32) void {
-    // Sleep for 2 seconds
-    std.log.info("hello sleeping! {d}", .{id});
-    // sleep is in nanoseconds
-    std.time.sleep(2 * 1000 * 1000 * 1000);
-    std.log.info("done sleeping! {d}", .{id});
-}
-
 pub fn main() !void {
     // read number arguments (argc)
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};

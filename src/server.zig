@@ -72,7 +72,6 @@ pub const Server = struct {
 
     pub fn handle_client(self: *Server) !std.Thread {
         const conn = try self.stream_server.accept();
-        // defer conn.stream.close(); -> TODO
 
         var thread = try std.Thread.spawn(.{}, Server.process_client, .{ self, conn.stream });
 

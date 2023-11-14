@@ -1,6 +1,8 @@
 const std = @import("std");
-const net_util = @import("lib/net.zig");
-const HostPort = net_util.HostPort;
+const net_lib = @import("lib/net.zig");
+const file_lib = @import("lib/file.zig");
+const fs = std.fs;
+const HostPort = net_lib.HostPort;
 const Allocator = std.mem.Allocator;
 
 pub const Client = struct {
@@ -45,7 +47,7 @@ pub const Client = struct {
     }
 
     pub fn connect(self: *Client) !void { // std.net.Stream
-        const ip_array = net_util.str_ip_to_array(self.host_port.host);
+        const ip_array = net_lib.str_ip_to_array(self.host_port.host);
 
         if (ip_array == null) {
             return error.HostInvalid;
@@ -55,18 +57,8 @@ pub const Client = struct {
         self.connection_stream = try std.net.tcpConnectToAddress(conn_to_address);
     }
 
-    pub fn process(self: *Client) !void {
-        // send our the remote file path
-        _ = try self.connection_stream.?.write(self.remote_file_path);
-
-        std.log.info("client has written", .{});
-        // read the status
-        var status: [1024]u8 = undefined;
-        const status_size = try self.connection_stream.?.read(status[0..]);
-        std.log.info("status .. {s}", .{status[0..status_size]});
-
-        // file reading and sending
-        var local_file = try std.fs.cwd().openFile(self.input_file_path, .{});
+    pub fn transfer_file(self: *Client, filepath: []const u8) !void {
+        var local_file = try std.fs.cwd().openFile(filepath, .{});
         defer local_file.close();
 
         const read_buffer_size = 200000;
@@ -80,6 +72,39 @@ pub const Client = struct {
 
             if (read_bytes.? > 0) {
                 _ = try self.connection_stream.?.write(buffer_read[0..read_bytes.?]);
+            }
+        }
+    }
+
+    pub fn process(self: *Client) !void {
+        // send our the remote file path
+        _ = try self.connection_stream.?.write(self.remote_file_path);
+
+        std.log.info("client has written", .{});
+        // read the status
+        var status: [1024]u8 = undefined;
+        const status_size = try self.connection_stream.?.read(status[0..]);
+        std.log.info("status .. {s}", .{status[0..status_size]});
+
+        var file_dir = try file_lib.evaluate_file_dir(self.allocator, self.input_file_path);
+        defer file_dir.deinit();
+
+        if (!file_dir.is_dir) {
+            // file reading and sending
+            std.log.info("Transmitting file {s}...", .{self.input_file_path});
+            try self.transfer_file(self.input_file_path);
+        } else {
+            std.log.info("{s} is a directory...", .{self.input_file_path});
+            var it = file_dir.directory.iterate();
+
+            while (try it.next()) |entry| {
+                var stat = try file_dir.directory.dir.statFile(entry.name);
+
+                if (stat.kind == .directory) {
+                    std.log.info(" [dir!]", .{});
+                } else if (stat.kind == .file) {
+                    std.log.info(" [file!]", .{});
+                }
             }
         }
 

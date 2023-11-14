@@ -4,7 +4,7 @@ const fs = std.fs;
 const Allocator = std.mem.Allocator;
 
 pub const FileDir = struct {
-    directory: fs.Dir,
+    directory: fs.IterableDir,
     filename: ?[]const u8,
     is_dir: bool,
     allocator: Allocator,
@@ -13,13 +13,14 @@ pub const FileDir = struct {
         if (self.filename != null) {
             self.allocator.free(self.filename.?);
         }
+
         self.directory.close();
     }
 };
 
 pub fn evaluate_file_dir(allocator: Allocator, filepath: []const u8) !FileDir {
     // filepath: example /folder/dir.txt
-    // returned Dir must be closed by the caller
+    // returned FileDir must be closed by the caller
 
     // check ends with /
     const pos_last_slash = std.mem.lastIndexOf(u8, filepath, "/");
@@ -27,19 +28,15 @@ pub fn evaluate_file_dir(allocator: Allocator, filepath: []const u8) !FileDir {
     if (pos_last_slash == null) {
         return error.FileNotFound;
     }
-    std.debug.print("pos_last_slash = {any}\n", .{pos_last_slash.?});
-
-
 
     if (pos_last_slash == filepath.len - 1) {
-        var dir = try std.fs.cwd().openDir(filepath, .{});
+        var dir = try std.fs.cwd().openIterableDir(filepath, .{});
 
         return FileDir{ .allocator = allocator, .directory = dir, .is_dir = true, .filename = null };
     }
 
     var directory_path = filepath[0..pos_last_slash.?];
-    var dir = try std.fs.cwd().openDir(directory_path, .{});
-
+    var dir = try std.fs.cwd().openIterableDir(directory_path, .{});
 
     // copy after / to f_dir.filename
     const filename = try allocator.alloc(u8, filepath.len - (pos_last_slash.? + 1));
