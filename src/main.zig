@@ -58,10 +58,6 @@ pub fn main() !void {
         var client = try Client.init(allocator, args[2], args[3]);
         defer client.deinit();
 
-        std.log.info("about to connect...", .{});
-        try client.connect();
-        std.log.info("connected...", .{});
-
         try client.process();
     } else {
         std.log.warn("Unknown mode: {s}", .{mode});

@@ -57,8 +57,29 @@ pub const Client = struct {
         self.connection_stream = try std.net.tcpConnectToAddress(conn_to_address);
     }
 
-    pub fn transfer_file(self: *Client, filepath: []const u8) !void {
-        var local_file = try std.fs.cwd().openFile(filepath, .{});
+    pub fn terminate_connection(self: *Client) void {
+        if (self.connection_stream != null) {
+            self.connection_stream.?.close();
+            self.connection_stream = null;
+        }
+    }
+
+    pub fn transfer_file(self: *Client, local_filepath: []const u8, remote_filepath: []const u8) !void {
+        try self.connect();
+        defer self.terminate_connection();
+
+        std.log.info("Transferring {s} -> {s}", .{ local_filepath, remote_filepath });
+
+        // send our the remote file path
+        _ = try self.connection_stream.?.write(remote_filepath);
+
+        std.log.info("client has written", .{});
+        // read the status
+        var status: [1024]u8 = undefined;
+        const status_size = try self.connection_stream.?.read(status[0..]);
+        std.log.info("status .. {s}", .{status[0..status_size]});
+
+        var local_file = try std.fs.cwd().openFile(local_filepath, .{});
         defer local_file.close();
 
         const read_buffer_size = 200000;
@@ -77,23 +98,16 @@ pub const Client = struct {
     }
 
     pub fn process(self: *Client) !void {
-        // send our the remote file path
-        _ = try self.connection_stream.?.write(self.remote_file_path);
-
-        std.log.info("client has written", .{});
-        // read the status
-        var status: [1024]u8 = undefined;
-        const status_size = try self.connection_stream.?.read(status[0..]);
-        std.log.info("status .. {s}", .{status[0..status_size]});
-
         var file_dir = try file_lib.evaluate_file_dir(self.allocator, self.input_file_path);
         defer file_dir.deinit();
 
         if (!file_dir.is_dir) {
             // file reading and sending
             std.log.info("Transmitting file {s}...", .{self.input_file_path});
-            try self.transfer_file(self.input_file_path);
+            try self.transfer_file(self.input_file_path, self.remote_file_path);
         } else {
+            // TODO add validation remote filepath should end with /
+
             std.log.info("{s} is a directory...", .{self.input_file_path});
             var it = file_dir.directory.iterate();
 
@@ -101,9 +115,21 @@ pub const Client = struct {
                 var stat = try file_dir.directory.dir.statFile(entry.name);
 
                 if (stat.kind == .directory) {
-                    std.log.info(" [dir!]", .{});
+                    std.log.info("Directory {s} - skipping", .{entry.name});
                 } else if (stat.kind == .file) {
-                    std.log.info(" [file!]", .{});
+                    var remote_filepath = try self.allocator.alloc(u8, self.remote_file_path.len + entry.name.len);
+                    defer self.allocator.free(remote_filepath);
+
+                    std.mem.copy(u8, remote_filepath, self.remote_file_path);
+                    std.mem.copy(u8, remote_filepath[self.remote_file_path.len..], entry.name);
+
+                    var local_filepath = try self.allocator.alloc(u8, self.input_file_path.len + entry.name.len);
+                    defer self.allocator.free(local_filepath);
+
+                    std.mem.copy(u8, local_filepath, self.input_file_path);
+                    std.mem.copy(u8, local_filepath[self.input_file_path.len..], entry.name);
+
+                    try self.transfer_file(local_filepath, remote_filepath);
                 }
             }
         }

@@ -65,9 +65,11 @@ pub const Server = struct {
         //std.log.info("stat remote file = {any}", .{stat});
 
         _ = try conn_stream.write("ok");
+        std.log.info("status sent ok", .{});
 
         // then read-write
         try self.receive_file(conn_stream, filepath_to_write[0..filepath_to_write_size]);
+        std.log.info("file received", .{});
     }
 
     pub fn handle_client(self: *Server) !std.Thread {
