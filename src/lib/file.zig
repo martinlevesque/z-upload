@@ -45,10 +45,33 @@ pub fn evaluate_file_dir(allocator: Allocator, filepath: []const u8) !FileDir {
     return FileDir{ .allocator = allocator, .directory = dir, .is_dir = false, .filename = filename };
 }
 
+pub fn folder_given_file(allocator: Allocator, filepath: []const u8) ![]const u8 {
+    const pos_last_slash = std.mem.lastIndexOf(u8, filepath, "/");
+
+    if (pos_last_slash == null) {
+         return error.NoDirectory;
+    }
+
+    var result = try allocator.alloc(u8, pos_last_slash.?+1);
+    std.mem.copy(u8, result, filepath[0..pos_last_slash.? + 1]);
+
+    return result;
+}
+
+
 test "evaluate_file_dir with directory" {
     const allocator = std.testing.allocator;
     var dir = try evaluate_file_dir(allocator, "/tmp/");
     defer dir.deinit();
 
     try std.testing.expect(dir.is_dir);
+}
+
+test "folder_given_file happy path" {
+    const allocator = std.testing.allocator;
+    const filepath = "/tmp/test.txt";
+    var folder = try folder_given_file(allocator, filepath);
+    defer allocator.free(folder);
+
+    try std.testing.expect(std.mem.eql(u8, folder, "/tmp/"));
 }
