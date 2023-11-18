@@ -73,19 +73,20 @@ pub const Client = struct {
         // send our the remote file path
         _ = try self.connection_stream.?.write(remote_filepath);
 
-        std.log.info("client has written", .{});
         // read the status
         var status: [1024]u8 = undefined;
-        const status_size = try self.connection_stream.?.read(status[0..]);
-        std.log.info("status .. {s}", .{status[0..status_size]});
+        _ = try self.connection_stream.?.read(status[0..]);
 
         var local_file = try std.fs.cwd().openFile(local_filepath, .{});
         defer local_file.close();
+        const stat_file = try local_file.stat();
 
         const read_buffer_size = 200000;
         var buffer_read: [read_buffer_size]u8 = undefined;
         try local_file.seekTo(0);
         var read_bytes: ?usize = null;
+        var total_sent_bytes: usize = 0;
+        var last_percentage: f64 = 0.0;
 
         // while read content
         while (read_bytes == null or read_bytes.? != 0) {
@@ -93,6 +94,16 @@ pub const Client = struct {
 
             if (read_bytes.? > 0) {
                 _ = try self.connection_stream.?.write(buffer_read[0..read_bytes.?]);
+                total_sent_bytes += read_bytes.?;
+
+                // ratio sent out of stat_file.size
+                const percentage = (@as(f64, @floatFromInt(total_sent_bytes)) / @as(f64, @floatFromInt(stat_file.size))) * 100.0;
+
+                if (percentage - last_percentage > 1.0) {
+                    std.log.info("sent {d} bytes ({d}%)", .{ total_sent_bytes, percentage });
+                }
+
+                last_percentage = percentage;
             }
         }
     }

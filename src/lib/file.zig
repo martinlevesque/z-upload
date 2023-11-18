@@ -75,3 +75,12 @@ test "folder_given_file happy path" {
 
     try std.testing.expect(std.mem.eql(u8, folder, "/tmp/"));
 }
+
+test "folder_given_file with directory" {
+    const allocator = std.testing.allocator;
+    const filepath = "/tmp/";
+    var folder = try folder_given_file(allocator, filepath);
+    defer allocator.free(folder);
+
+    try std.testing.expect(std.mem.eql(u8, folder, "/tmp/"));
+}

@@ -34,7 +34,17 @@ pub const Server = struct {
         self.host_port.deinit();
     }
 
-    pub fn receive_file(_: *Server, conn_stream: std.net.Stream, server_file_path: []const u8) !void {
+    pub fn receive_file(self: *Server, conn_stream: std.net.Stream, server_file_path: []const u8) !void {
+        var directory_path = try file_util.folder_given_file(self.allocator, server_file_path);
+        defer self.allocator.free(directory_path);
+
+        // ensure create directory
+        std.fs.makeDirAbsolute(directory_path) catch {};
+        var dir = std.fs.openDirAbsolute(directory_path, .{}) catch {
+            return error.ServerFileCreateDirectory;
+        };
+        defer dir.close();
+
         var local_file = try std.fs.cwd().createFile(server_file_path, .{});
         defer local_file.close();
 
@@ -69,8 +79,10 @@ pub const Server = struct {
         std.log.info("status sent ok", .{});
 
         // then read-write
-        try self.receive_file(conn_stream, filepath_to_write[0..filepath_to_write_size]);
-        std.log.info("file received", .{});
+        const file_to_recv_path = filepath_to_write[0..filepath_to_write_size];
+        self.receive_file(conn_stream, file_to_recv_path) catch |err| {
+            std.log.err("Unable to receive file {s}. Error: {any}", .{ file_to_recv_path, err });
+        };
     }
 
     pub fn handle_client(self: *Server) !std.Thread {

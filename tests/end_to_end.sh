@@ -27,7 +27,7 @@ fi
 rm -f /tmp/testfolder-*.txt
 mkdir -p ./tmp
 echo "testcontentfile!" > ./tmp/testfolder-1.txt
-echo "testcontentfile2!" > ./tmp/testfolder-1.txt
+echo "testcontentfile2!" > ./tmp/testfolder-2.txt
 
 ./zig-out/bin/z-upload -client ./tmp/ /tmp/@127.0.0.1:8000
 
