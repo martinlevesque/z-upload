@@ -101,9 +101,9 @@ pub const Client = struct {
 
                 if (percentage - last_percentage > 1.0) {
                     std.log.info("sent {d} bytes ({d}%)", .{ total_sent_bytes, percentage });
+                    last_percentage = percentage;
                 }
 
-                last_percentage = percentage;
             }
         }
     }
