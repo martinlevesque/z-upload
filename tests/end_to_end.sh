@@ -12,7 +12,8 @@ rm -f /tmp/testfile-out.txt
 mkdir -p ./tmp
 echo "testcontentfile!" > ./tmp/testfile.txt
 
-./zig-out/bin/z-upload ./tmp/testfile.txt /tmp/testfile-out.txt@127.0.0.1:8000
+export Z_UPLOAD_HOST_PORT=127.0.0.1:8000
+./zig-out/bin/z-upload ./tmp/testfile.txt /tmp/testfile-out.txt
 
 expected_checksum=$(cat ./tmp/testfile.txt | cksum)
 

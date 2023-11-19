@@ -16,16 +16,33 @@ pub const Client = struct {
     pub fn init(allocator: Allocator, input_file_path: []const u8, remote_uri: []const u8) !Client {
         const pos_at = std.mem.indexOf(u8, remote_uri, "@");
 
-        if (pos_at == null) {
+        const env_host_port = std.os.getenv("Z_UPLOAD_HOST_PORT");
+
+        if (pos_at == null and env_host_port == null) {
             return error.ClientMissingAtSign;
         }
 
         // setup the remote_file_path part
-        const remote_file_path = try allocator.alloc(u8, pos_at.?);
-        std.mem.copy(u8, remote_file_path, remote_uri[0..pos_at.?]);
+        var remote_file_path: []u8 = undefined;
+        var remote_host_port_str: []u8 = undefined;
+        defer allocator.free(remote_host_port_str);
+
+        if (pos_at != null) {
+            remote_file_path = try allocator.alloc(u8, pos_at.?);
+            std.mem.copy(u8, remote_file_path, remote_uri[0..pos_at.?]);
+
+            remote_host_port_str = try allocator.alloc(u8, remote_uri.len - (pos_at.? + 1));
+            std.mem.copy(u8, remote_host_port_str, remote_uri[pos_at.? + 1 ..]);
+        } else {
+            remote_file_path = try allocator.alloc(u8, remote_uri.len);
+            std.mem.copy(u8, remote_file_path, remote_uri);
+
+            remote_host_port_str = try allocator.alloc(u8, env_host_port.?.len);
+            std.mem.copy(u8, remote_host_port_str, env_host_port.?);
+        }
 
         // host_port part
-        var host_port = try HostPort.parse_host_port(allocator, remote_uri[pos_at.? + 1 ..]);
+        var host_port = try HostPort.parse_host_port(allocator, remote_host_port_str);
 
         return Client{
             .connection_stream = null,
