@@ -1,4 +1,4 @@
 # z-upload
 
 todo
-- ability resume
+- env variable client remote host

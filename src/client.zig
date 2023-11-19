@@ -103,7 +103,6 @@ pub const Client = struct {
                     std.log.info("sent {d} bytes ({d}%)", .{ total_sent_bytes, percentage });
                     last_percentage = percentage;
                 }
-
             }
         }
     }

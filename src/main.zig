@@ -47,21 +47,16 @@ pub fn main() !void {
             // break;
             cur_thread.detach();
         }
-    } else if (std.mem.eql(u8, mode, "-client")) {
-        std.log.info("Client mode", .{});
-
-        if (args.len < 4) {
+    } else {
+        if (args.len < 3) {
             try usage("Expected additional arguments");
             return;
         }
 
-        var client = try Client.init(allocator, args[2], args[3]);
+        var client = try Client.init(allocator, args[1], args[2]);
         defer client.deinit();
 
         try client.process();
-    } else {
-        std.log.warn("Unknown mode: {s}", .{mode});
-        return;
     }
 }
 
