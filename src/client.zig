@@ -131,10 +131,20 @@ pub const Client = struct {
         if (!file_dir.is_dir) {
             // file reading and sending
             std.log.info("Transmitting file {s}...", .{self.input_file_path});
-            try self.transfer_file(self.input_file_path, self.remote_file_path);
-        } else {
-            // TODO add validation remote filepath should end with /
 
+            var remote_file_dir = try file_lib.evaluate_file_dir(self.allocator, self.remote_file_path);
+            defer remote_file_dir.deinit();
+
+            if (remote_file_dir.is_dir) {
+                var remote_filepath =
+                    try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ self.remote_file_path, file_dir.filename.? });
+                defer self.allocator.free(remote_filepath);
+
+                try self.transfer_file(self.input_file_path, remote_filepath);
+            } else {
+                try self.transfer_file(self.input_file_path, self.remote_file_path);
+            }
+        } else {
             std.log.info("{s} is a directory...", .{self.input_file_path});
             var it = file_dir.directory.iterate();
 

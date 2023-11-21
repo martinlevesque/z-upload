@@ -1,5 +1,5 @@
 # z-upload
 
 todo
-- env variable client remote host
-- allow client /path/file.txt /media/@...
+- replace multiple copy by allocPrint
+- docker setup

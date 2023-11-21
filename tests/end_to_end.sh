@@ -24,6 +24,22 @@ if [ "$expected_checksum" != "$given_checksum" ]; then
     exit 1
 fi
 
+# test single file uploaded to a folder
+rm -f /tmp/testfilefff-out.txt
+mkdir -p ./tmp
+echo "testcontentfile!" > ./tmp/testfilefff.txt
+
+./zig-out/bin/z-upload ./tmp/testfilefff.txt /tmp/
+
+expected_checksum=$(cat ./tmp/testfilefff.txt | cksum)
+
+given_checksum=$(cat /tmp/testfilefff.txt | cksum)
+
+if [ "$expected_checksum" != "$given_checksum" ]; then
+    echo "Checksums do not match!"
+    exit 1
+fi
+
 # test upload folder
 rm -f /tmp/testfolder-*.txt
 mkdir -p ./tmp

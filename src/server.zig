@@ -66,7 +66,7 @@ pub const Server = struct {
         const filepath_to_write_size = try conn_stream.read(filepath_to_write[0..]);
         const server_filepath = filepath_to_write[0..filepath_to_write_size];
 
-        std.log.info("received filepath: {s}", .{server_filepath});
+        std.log.info("receiving {s}...", .{server_filepath});
 
         // file status reporting
         // todo should determine if the file already exist, if so, report remaining todo
