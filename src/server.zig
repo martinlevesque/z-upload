@@ -61,6 +61,12 @@ pub const Server = struct {
     }
 
     pub fn process_client(self: *Server, conn_stream: std.net.Stream) !void {
+        var recv_auth_key: [1024]u8 = undefined;
+        const recv_auth_key_size = try conn_stream.read(recv_auth_key[0..]);
+
+        std.log.info("auth key = {s}", .{recv_auth_key[0..recv_auth_key_size]});
+        _ = try conn_stream.write("recv-auth-key");
+
         // where the file will be written
         var filepath_to_write: [1024]u8 = undefined;
         const filepath_to_write_size = try conn_stream.read(filepath_to_write[0..]);

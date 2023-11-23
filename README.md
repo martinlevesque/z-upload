@@ -1,5 +1,5 @@
 # z-upload
 
 todo
-- replace multiple copy by allocPrint
+- add key auth
 - docker setup

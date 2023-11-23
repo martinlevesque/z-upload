@@ -2,6 +2,7 @@ const std = @import("std");
 const net_lib = @import("lib/net.zig");
 const file_lib = @import("lib/file.zig");
 const fs = std.fs;
+const fmt = std.fmt;
 const HostPort = net_lib.HostPort;
 const Allocator = std.mem.Allocator;
 
@@ -12,6 +13,7 @@ pub const Client = struct {
     remote_file_path: []const u8,
     allocator: Allocator,
     connection_stream: ?std.net.Stream,
+    auth_key: ?[]const u8,
 
     pub fn init(allocator: Allocator, input_file_path: []const u8, remote_uri: []const u8) !Client {
         const pos_at = std.mem.indexOf(u8, remote_uri, "@");
@@ -51,6 +53,7 @@ pub const Client = struct {
             .remote_uri = remote_uri,
             .host_port = host_port,
             .remote_file_path = remote_file_path,
+            .auth_key = std.os.getenv("Z_UPLOAD_AUTH_KEY"),
         };
     }
 
@@ -85,14 +88,22 @@ pub const Client = struct {
         try self.connect();
         defer self.terminate_connection();
 
+        if (self.auth_key != null) {
+            _ = try self.connection_stream.?.write(self.auth_key.?);
+        } else {
+            _ = try self.connection_stream.?.write("-");
+        }
+
+        var status_buf: [1024]u8 = undefined;
+        _ = try self.connection_stream.?.read(status_buf[0..]);
+
         std.log.info("Transferring {s} -> {s}", .{ local_filepath, remote_filepath });
 
         // send our the remote file path
         _ = try self.connection_stream.?.write(remote_filepath);
 
         // read the status
-        var status: [1024]u8 = undefined;
-        _ = try self.connection_stream.?.read(status[0..]);
+        _ = try self.connection_stream.?.read(status_buf[0..]);
 
         var local_file = try std.fs.cwd().openFile(local_filepath, .{});
         defer local_file.close();
@@ -114,7 +125,8 @@ pub const Client = struct {
                 total_sent_bytes += read_bytes.?;
 
                 // ratio sent out of stat_file.size
-                const percentage = (@as(f64, @floatFromInt(total_sent_bytes)) / @as(f64, @floatFromInt(stat_file.size))) * 100.0;
+                const percentage = (@as(f64, @floatFromInt(total_sent_bytes)) /
+                    @as(f64, @floatFromInt(stat_file.size))) * 100.0;
 
                 if (percentage - last_percentage > 1.0) {
                     std.log.info("sent {d} bytes ({d}%)", .{ total_sent_bytes, percentage });
@@ -132,12 +144,18 @@ pub const Client = struct {
             // file reading and sending
             std.log.info("Transmitting file {s}...", .{self.input_file_path});
 
-            var remote_file_dir = try file_lib.evaluate_file_dir(self.allocator, self.remote_file_path);
+            var remote_file_dir = try file_lib.evaluate_file_dir(
+                self.allocator,
+                self.remote_file_path,
+            );
             defer remote_file_dir.deinit();
 
             if (remote_file_dir.is_dir) {
-                var remote_filepath =
-                    try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ self.remote_file_path, file_dir.filename.? });
+                var remote_filepath = try fmt.allocPrint(
+                    self.allocator,
+                    "{s}{s}",
+                    .{ self.remote_file_path, file_dir.filename.? },
+                );
                 defer self.allocator.free(remote_filepath);
 
                 try self.transfer_file(self.input_file_path, remote_filepath);
@@ -154,17 +172,19 @@ pub const Client = struct {
                 if (stat.kind == .directory) {
                     std.log.info("Directory {s} - skipping", .{entry.name});
                 } else if (stat.kind == .file) {
-                    var remote_filepath = try self.allocator.alloc(u8, self.remote_file_path.len + entry.name.len);
+                    var remote_filepath = try fmt.allocPrint(
+                        self.allocator,
+                        "{s}{s}",
+                        .{ self.remote_file_path, entry.name },
+                    );
                     defer self.allocator.free(remote_filepath);
 
-                    std.mem.copy(u8, remote_filepath, self.remote_file_path);
-                    std.mem.copy(u8, remote_filepath[self.remote_file_path.len..], entry.name);
-
-                    var local_filepath = try self.allocator.alloc(u8, self.input_file_path.len + entry.name.len);
+                    var local_filepath = try fmt.allocPrint(
+                        self.allocator,
+                        "{s}{s}",
+                        .{ self.input_file_path, entry.name },
+                    );
                     defer self.allocator.free(local_filepath);
-
-                    std.mem.copy(u8, local_filepath, self.input_file_path);
-                    std.mem.copy(u8, local_filepath[self.input_file_path.len..], entry.name);
 
                     try self.transfer_file(local_filepath, remote_filepath);
                 }
