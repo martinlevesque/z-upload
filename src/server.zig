@@ -64,22 +64,22 @@ pub const Server = struct {
         var recv_auth_key: [1024]u8 = undefined;
         const recv_auth_key_size = try conn_stream.read(recv_auth_key[0..]);
 
-        std.log.info("auth key = {s}", .{recv_auth_key[0..recv_auth_key_size]});
+        const server_auth_key = std.os.getenv("Z_UPLOAD_AUTH_KEY");
+
+        if (server_auth_key != null and server_auth_key.?.len > 0) {
+            if (!std.mem.eql(u8, recv_auth_key[0..recv_auth_key_size], server_auth_key.?)) {
+                std.log.err("auth key mismatch", .{});
+                return error.ServerAuthKeyMismatch;
+            }
+        }
+
+        std.log.info("rcv auth key = {s}", .{recv_auth_key[0..recv_auth_key_size]});
+
         _ = try conn_stream.write("recv-auth-key");
 
         // where the file will be written
         var filepath_to_write: [1024]u8 = undefined;
         const filepath_to_write_size = try conn_stream.read(filepath_to_write[0..]);
-        const server_filepath = filepath_to_write[0..filepath_to_write_size];
-
-        std.log.info("receiving {s}...", .{server_filepath});
-
-        // file status reporting
-        // todo should determine if the file already exist, if so, report remaining todo
-        // using head -c 1000 testfile.txt | cksum
-
-        //var stat = try std.fs.cwd().statFile(server_filepath);
-        //std.log.info("stat remote file = {any}", .{stat});
 
         _ = try conn_stream.write("ok");
         std.log.info("status sent ok", .{});
