@@ -73,8 +73,6 @@ pub const Server = struct {
             }
         }
 
-        std.log.info("rcv auth key = {s}", .{recv_auth_key[0..recv_auth_key_size]});
-
         _ = try conn_stream.write("recv-auth-key");
 
         // where the file will be written
