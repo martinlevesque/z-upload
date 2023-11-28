@@ -4,7 +4,7 @@ set -e
 make build
 
 
-make server-sample &
+make server &
 sleep 3
 
 # test upload single file

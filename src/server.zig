@@ -60,6 +60,11 @@ pub const Server = struct {
         }
     }
 
+    pub fn deinit_conn_stream(_: *Server, conn_stream: std.net.Stream) void {
+        std.log.info("deiniting conn stream.", .{});
+        conn_stream.close();
+    }
+
     pub fn process_client(self: *Server, conn_stream: std.net.Stream) !void {
         var recv_auth_key: [1024]u8 = undefined;
         const recv_auth_key_size = try conn_stream.read(recv_auth_key[0..]);
@@ -68,7 +73,8 @@ pub const Server = struct {
 
         if (server_auth_key != null and server_auth_key.?.len > 0) {
             if (!std.mem.eql(u8, recv_auth_key[0..recv_auth_key_size], server_auth_key.?)) {
-                std.log.err("auth key mismatch", .{});
+                _ = try conn_stream.write("invalid-auth-key");
+                std.time.sleep(1000000000);
                 return error.ServerAuthKeyMismatch;
             }
         }

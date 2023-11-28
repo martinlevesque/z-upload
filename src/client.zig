@@ -84,27 +84,30 @@ pub const Client = struct {
         }
     }
 
-    pub fn transfer_file(self: *Client, local_filepath: []const u8, remote_filepath: []const u8) !void {
-        try self.connect();
-        defer self.terminate_connection();
+    fn read_and_validate_auth_key(self: *Client) !void {
+        var status_buf: [1024]u8 = undefined;
+        var status_buf_len = try self.connection_stream.?.read(status_buf[0..]);
 
+        // mem cmp
+        if (std.mem.eql(u8, status_buf[0..status_buf_len], "invalid-auth-key")) {
+            return error.InvalidAuthKey;
+        }
+    }
+
+    fn read_remote_file_status(self: *Client) !void {
+        var status_buf: [1024]u8 = undefined;
+        _ = try self.connection_stream.?.read(status_buf[0..]);
+    }
+
+    fn send_auth_key(self: *Client) !void {
         if (self.auth_key != null) {
             _ = try self.connection_stream.?.write(self.auth_key.?);
         } else {
             _ = try self.connection_stream.?.write("-");
         }
+    }
 
-        var status_buf: [1024]u8 = undefined;
-        _ = try self.connection_stream.?.read(status_buf[0..]);
-
-        std.log.info("Transferring {s} -> {s}", .{ local_filepath, remote_filepath });
-
-        // send our the remote file path
-        _ = try self.connection_stream.?.write(remote_filepath);
-
-        // read the status
-        _ = try self.connection_stream.?.read(status_buf[0..]);
-
+    fn socket_send_file(self: *Client, local_filepath: []const u8) !void {
         var local_file = try std.fs.cwd().openFile(local_filepath, .{});
         defer local_file.close();
         const stat_file = try local_file.stat();
@@ -134,6 +137,24 @@ pub const Client = struct {
                 }
             }
         }
+    }
+
+    pub fn transfer_file(self: *Client, local_filepath: []const u8, remote_filepath: []const u8) !void {
+        try self.connect();
+        defer self.terminate_connection();
+
+        try self.send_auth_key();
+
+        try self.read_and_validate_auth_key();
+
+        std.log.info("Transferring {s} -> {s}", .{ local_filepath, remote_filepath });
+
+        // send our the remote file path
+        _ = try self.connection_stream.?.write(remote_filepath);
+
+        try self.read_remote_file_status();
+
+        try self.socket_send_file(local_filepath);
     }
 
     pub fn process(self: *Client) !void {
