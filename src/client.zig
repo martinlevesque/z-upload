@@ -157,59 +157,67 @@ pub const Client = struct {
         try self.socket_send_file(local_filepath);
     }
 
+    fn process_file_transfer(self: *Client, file_dir: file_lib.FileDir) !void {
+        // file reading and sending
+        std.log.info("Transmitting file {s}...", .{self.input_file_path});
+
+        var remote_file_dir = try file_lib.evaluate_file_dir(
+            self.allocator,
+            self.remote_file_path,
+        );
+        defer remote_file_dir.deinit();
+
+        if (remote_file_dir.is_dir) {
+            var remote_filepath = try fmt.allocPrint(
+                self.allocator,
+                "{s}{s}",
+                .{ self.remote_file_path, file_dir.filename.? },
+            );
+            defer self.allocator.free(remote_filepath);
+
+            try self.transfer_file(self.input_file_path, remote_filepath);
+        } else {
+            try self.transfer_file(self.input_file_path, self.remote_file_path);
+        }
+    }
+
+    fn process_dir_transfer(self: *Client, file_dir: file_lib.FileDir) !void {
+        std.log.info("{s} is a directory...", .{self.input_file_path});
+        var it = file_dir.directory.iterate();
+
+        while (try it.next()) |entry| {
+            var stat = try file_dir.directory.dir.statFile(entry.name);
+
+            if (stat.kind == .directory) {
+                std.log.info("Directory {s} - skipping", .{entry.name});
+            } else if (stat.kind == .file) {
+                var remote_filepath = try fmt.allocPrint(
+                    self.allocator,
+                    "{s}{s}",
+                    .{ self.remote_file_path, entry.name },
+                );
+                defer self.allocator.free(remote_filepath);
+
+                var local_filepath = try fmt.allocPrint(
+                    self.allocator,
+                    "{s}{s}",
+                    .{ self.input_file_path, entry.name },
+                );
+                defer self.allocator.free(local_filepath);
+
+                try self.transfer_file(local_filepath, remote_filepath);
+            }
+        }
+    }
+
     pub fn process(self: *Client) !void {
         var file_dir = try file_lib.evaluate_file_dir(self.allocator, self.input_file_path);
         defer file_dir.deinit();
 
         if (!file_dir.is_dir) {
-            // file reading and sending
-            std.log.info("Transmitting file {s}...", .{self.input_file_path});
-
-            var remote_file_dir = try file_lib.evaluate_file_dir(
-                self.allocator,
-                self.remote_file_path,
-            );
-            defer remote_file_dir.deinit();
-
-            if (remote_file_dir.is_dir) {
-                var remote_filepath = try fmt.allocPrint(
-                    self.allocator,
-                    "{s}{s}",
-                    .{ self.remote_file_path, file_dir.filename.? },
-                );
-                defer self.allocator.free(remote_filepath);
-
-                try self.transfer_file(self.input_file_path, remote_filepath);
-            } else {
-                try self.transfer_file(self.input_file_path, self.remote_file_path);
-            }
+            try self.process_file_transfer(file_dir);
         } else {
-            std.log.info("{s} is a directory...", .{self.input_file_path});
-            var it = file_dir.directory.iterate();
-
-            while (try it.next()) |entry| {
-                var stat = try file_dir.directory.dir.statFile(entry.name);
-
-                if (stat.kind == .directory) {
-                    std.log.info("Directory {s} - skipping", .{entry.name});
-                } else if (stat.kind == .file) {
-                    var remote_filepath = try fmt.allocPrint(
-                        self.allocator,
-                        "{s}{s}",
-                        .{ self.remote_file_path, entry.name },
-                    );
-                    defer self.allocator.free(remote_filepath);
-
-                    var local_filepath = try fmt.allocPrint(
-                        self.allocator,
-                        "{s}{s}",
-                        .{ self.input_file_path, entry.name },
-                    );
-                    defer self.allocator.free(local_filepath);
-
-                    try self.transfer_file(local_filepath, remote_filepath);
-                }
-            }
+            try self.process_dir_transfer(file_dir);
         }
 
         std.log.info("client finished.", .{});
