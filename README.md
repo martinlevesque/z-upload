@@ -1,5 +1,7 @@
 # z-upload
 
+todo 
+compress decompress https://ziglang.org/documentation/0.11.0/std/src/std/compress/zlib.zig.html#L179
 
 ## Benchmark
 
@@ -12,3 +14,4 @@ Filesize 1.350 GB
 - z-upload, 1 MB chunk: 11.7 seconds
 - vsftpd: 13 seconds
 - sftp: 38 seconds
+
