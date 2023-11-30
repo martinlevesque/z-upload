@@ -3,6 +3,8 @@
 todo 
 compress decompress https://ziglang.org/documentation/0.11.0/std/src/std/compress/zlib.zig.html#L179
 
+todo retry, but with buffer (client, serv) 65000
+
 ## Benchmark
 
 Filesize 1.350 GB
